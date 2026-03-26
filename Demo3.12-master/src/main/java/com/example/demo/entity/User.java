@@ -1,19 +1,15 @@
 package com.example.demo.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+@TableName("sys_user") // 绑定数据库表名
 public class User {
+    @TableId(type = IdType.AUTO) // 主键自增
     private Long id;
-    private String name;
-    private Integer age;
-
-    // 无参构造方法
-    public User() {}
-
-    // 全参构造方法
-    public User(Long id, String name, Integer age) {
-        this.id = id;
-        this.name = name;
-        this.age = age;
-    }
+    private String username;
+    private String password;
 
     // Getter 和 Setter
     public Long getId() {
@@ -24,19 +20,19 @@ public class User {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getUsername() {
+        return username;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
-    public Integer getAge() {
-        return age;
+    public String getPassword() {
+        return password;
     }
 
-    public void setAge(Integer age) {
-        this.age = age;
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
