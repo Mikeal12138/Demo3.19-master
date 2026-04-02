@@ -1,8 +1,15 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: demo
   datasource:
-    driver-class-name: org.postgresql.Driver # 显式指定 PostgreSQL 驱动
-    url: jdbc:postgresql://localhost:5432/lab_db # 端口改为 5432
-    username: postgres
-    password: password # 替换为你在 PgAdmin 中设置的实际密码
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/my_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 212308511
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

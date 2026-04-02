@@ -25,10 +25,9 @@ public class UserController {
         return userService.login(userDTO);
     }
 
-    // 3. 获取用户信息（查）- 用于测试拦截器放行
+    // 3. 根据 id 查询用户
     @GetMapping("/{id}")
     public Result<String> getUser(@PathVariable("id") Long id) {
-        // 👇 只改这一行，和你截图标准答案完全一致！
-        return Result.success("用户信息：id=" + id + ", username=admin");
+        return userService.getUserById(id);
     }
 }
