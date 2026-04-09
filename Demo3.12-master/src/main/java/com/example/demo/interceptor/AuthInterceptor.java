@@ -20,9 +20,15 @@ public class AuthInterceptor implements HandlerInterceptor {
         boolean isCreateUser = "POST".equalsIgnoreCase(method) && "/api/users".equals(uri);
         // 规则B：GET 请求 + 路径以 /api/users/ 开头（查询用户）
         boolean isGetUser = "GET".equalsIgnoreCase(method) && uri.startsWith("/api/users/");
+        // 规则C：POST 请求 + 路径等于 /api/users/login（登录用户）
+        boolean isLogin = "POST".equalsIgnoreCase(method) && "/api/users/login".equals(uri);
+        // 规则D：GET 请求 + 路径等于 /api/users/page（分页查询用户）
+        boolean isUserPage = "GET".equalsIgnoreCase(method) && "/api/users/page".equals(uri);
+        // 规则E：GET 请求 + 路径等于 /api/user-info/page（分页查询用户信息）
+        boolean isUserInfoPage = "GET".equalsIgnoreCase(method) && "/api/user-info/page".equals(uri);
 
         // 满足任一合法规则 → 直接放行，无需验 Token
-        if (isCreateUser || isGetUser) {
+        if (isCreateUser || isGetUser || isLogin || isUserPage || isUserInfoPage) {
             return true;
         }
 
