@@ -9,7 +9,9 @@ public enum ResultCode {
     // 用户相关
     USER_HAS_EXISTED(400, "用户已存在"),
     USER_NOT_EXIST(400, "用户不存在"),
-    PASSWORD_ERROR(400, "密码错误");
+    PASSWORD_ERROR(400, "密码错误"),
+    // 其他相关
+    PARAM_ERROR(400, "参数错误");
 
     private final Integer code;
     private final String msg;

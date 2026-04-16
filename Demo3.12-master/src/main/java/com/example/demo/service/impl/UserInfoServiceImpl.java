@@ -6,6 +6,8 @@ import com.example.demo.common.Result;
 import com.example.demo.entity.UserInfo;
 import com.example.demo.mapper.UserInfoMapper;
 import com.example.demo.service.UserInfoService;
+import com.example.demo.vo.UserDetailVO;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,5 +28,17 @@ public class UserInfoServiceImpl implements UserInfoService {
 
         // 3. 返回结果（resultPage 中包含了 records 数据列表、total 总条数、pages 总页数等信息）
         return Result.success(resultPage);
+    }
+
+    @Override
+    public Result<UserDetailVO> getUserDetail(Long userId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getUserDetail'");
+    }
+
+    @Override
+    public Result<String> updateUserInfo(UserInfo userInfo) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'updateUserInfo'");
     }
 }
