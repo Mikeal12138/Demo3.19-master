@@ -1,58 +1,68 @@
 package com.example.demo.interceptor;
 
 import com.example.demo.common.ResultCode;
+import com.example.demo.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.PrintWriter;
 
+@Component
 public class AuthInterceptor implements HandlerInterceptor {
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // 1. 获取本次请求的 HTTP 动词和具体路径
-        String method = request.getMethod(); // GET/POST/DELETE/PUT 等
-        String uri = request.getRequestURI(); // 如 /api/users 或 /api/users/1
+        String method = request.getMethod();
+        String uri = request.getRequestURI();
 
-        // 2. 精细化放行规则（仅放行合法操作）
-        // 规则A：POST 请求 + 路径等于 /api/users（注册用户）
         boolean isCreateUser = "POST".equalsIgnoreCase(method) && "/api/users".equals(uri);
-        // 规则B：GET 请求 + 路径以 /api/users/ 开头（查询用户）
-        boolean isGetUser = "GET".equalsIgnoreCase(method) && uri.startsWith("/api/users/");
-        // 规则C：POST 请求 + 路径等于 /api/users/login（登录用户）
         boolean isLogin = "POST".equalsIgnoreCase(method) && "/api/users/login".equals(uri);
-        // 规则D：GET 请求 + 路径等于 /api/users/page（分页查询用户）
-        boolean isUserPage = "GET".equalsIgnoreCase(method) && "/api/users/page".equals(uri);
-        // 规则E：GET 请求 + 路径等于 /api/user-info/page（分页查询用户信息）
-        boolean isUserInfoPage = "GET".equalsIgnoreCase(method) && "/api/user-info/page".equals(uri);
 
-        // 满足任一合法规则 → 直接放行，无需验 Token
-        if (isCreateUser || isGetUser || isLogin || isUserPage || isUserInfoPage) {
+        if (isCreateUser || isLogin) {
             return true;
         }
 
-        // 3. 敏感操作（DELETE/PUT 等）→ 严格校验 Token
-        String token = request.getHeader("Authorization");
-        if (token == null || token.isEmpty()) {
-            // 返回统一 401 错误 JSON
-            response.setContentType("application/json;charset=UTF-8");
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-
-            ResultCode resultCode = ResultCode.TOKEN_INVALID;
-            String errorJson = String.format(
-                    "{\"code\": %d, \"msg\": \"%s\", \"data\": null}",
-                    resultCode.getCode(),
-                    "非法操作：敏感动作[" + method + "]需携带Token"
-            );
-
-            PrintWriter writer = response.getWriter();
-            writer.write(errorJson);
-            writer.flush();
-            return false; // 拦截请求
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader == null || authorizationHeader.isEmpty()) {
+            sendErrorResponse(response, "未携带Token，请先登录");
+            return false;
         }
 
-        // Token 存在 → 放行敏感操作
+        String token = null;
+        if (authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+        } else {
+            token = authorizationHeader;
+        }
+
+        String username = jwtUtil.extractUsername(token);
+        if (username == null || !jwtUtil.validateToken(token, username)) {
+            sendErrorResponse(response, "Token无效或已过期");
+            return false;
+        }
+
         return true;
+    }
+
+    private void sendErrorResponse(HttpServletResponse response, String message) throws Exception {
+        response.setContentType("application/json;charset=UTF-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
+        ResultCode resultCode = ResultCode.TOKEN_INVALID;
+        String errorJson = String.format(
+                "{\"code\": %d, \"msg\": \"%s\", \"data\": null}",
+                resultCode.getCode(),
+                message
+        );
+
+        PrintWriter writer = response.getWriter();
+        writer.write(errorJson);
+        writer.flush();
     }
 }

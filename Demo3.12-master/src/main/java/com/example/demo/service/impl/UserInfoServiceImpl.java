@@ -1,32 +1,21 @@
 package com.example.demo.service.impl;
 
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.demo.common.Result;
-import com.example.demo.common.ResultCode;
 import com.example.demo.entity.UserInfo;
 import com.example.demo.mapper.UserInfoMapper;
 import com.example.demo.service.UserInfoService;
 import com.example.demo.vo.UserDetailVO;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserInfoServiceImpl implements UserInfoService {
 
     @Autowired
     private UserInfoMapper userInfoMapper;
-    
-    @Autowired
-    private StringRedisTemplate redisTemplate;
-    
-    // 缓存键前缀
-    private static final String CACHE_KEY_PREFIX = "user:detail:";
 
     @Override
     public Result<Object> getUserInfoPage(Integer pageNum, Integer pageSize) {
@@ -43,57 +32,13 @@ public class UserInfoServiceImpl implements UserInfoService {
 
     @Override
     public Result<UserDetailVO> getUserDetail(Long userId) {
-        String key = CACHE_KEY_PREFIX + userId;
-
-        // 1. 先查缓存
-        String json = redisTemplate.opsForValue().get(key);
-        if (json != null && !json.isBlank()) {
-            try {
-                UserDetailVO cacheVO = JSONUtil.toBean(json, UserDetailVO.class);
-                return Result.success(cacheVO);
-            } catch (Exception e) {
-                // 缓存数据异常，删掉脏缓存，继续查数据库
-                redisTemplate.delete(key);
-            }
-        }
-
-        // 2. 查数据库
-        UserDetailVO detail = userInfoMapper.getUserDetail(userId);
-        if (detail == null) {
-            return Result.error(ResultCode.USER_NOT_EXIST);
-        }
-
-        // 3. 写缓存
-        redisTemplate.opsForValue().set(
-                key,
-                JSONUtil.toJsonStr(detail),
-                10,
-                TimeUnit.MINUTES
-        );
-
-        return Result.success(detail);
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getUserDetail'");
     }
 
     @Override
     public Result<String> updateUserInfo(UserInfo userInfo) {
-        // 参数校验，userInfo 不能为空，并且 userId 不能为空，后面删除 Redis 缓存时使用
-        if (userInfo == null || userInfo.getUserId() == null) {
-            return Result.error(ResultCode.PARAM_ERROR);
-        }
-
-        // 1. 先操作数据库
-        LambdaQueryWrapper<UserInfo> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(UserInfo::getUserId, userInfo.getUserId());
-        int updateCount = userInfoMapper.update(userInfo, queryWrapper);
-
-        if (updateCount == 0) {
-            return Result.error(ResultCode.USER_NOT_EXIST);
-        }
-
-        // 2. 成功后删除旧缓存（保证一致性）
-        String key = CACHE_KEY_PREFIX + userInfo.getUserId();
-        redisTemplate.delete(key);
-
-        return Result.success("用户信息更新成功");
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'updateUserInfo'");
     }
 }

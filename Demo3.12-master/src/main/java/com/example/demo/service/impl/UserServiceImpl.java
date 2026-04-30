@@ -10,13 +10,12 @@ import com.example.demo.entity.User;
 import com.example.demo.entity.UserInfo;
 import com.example.demo.mapper.UserInfoMapper;
 import com.example.demo.mapper.UserMapper;
-import com.example.demo.service.UserInfoService;
+import com.example.demo.security.JwtUtil;
 import com.example.demo.service.UserService;
 import com.example.demo.vo.UserDetailVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -26,10 +25,13 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
 
     @Autowired
-    private UserInfoService userInfoService;
+    private UserInfoMapper userInfoMapper;
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     // 缓存键前缀
     private static final String CACHE_KEY_PREFIX = "user:detail:";
@@ -71,9 +73,9 @@ public class UserServiceImpl implements UserService {
         if (!dbUser.getPassword().equals(userDTO.getPassword())) {
             return Result.error(ResultCode.PASSWORD_ERROR);
         }
-        // 4. 返回 Bearer token
-        String token = "Bearer " + UUID.randomUUID();
-        return Result.success(token);
+        // 4. 使用JWT生成Token
+        String jwt = jwtUtil.generateToken(userDTO.getUsername());
+        return Result.success(jwt);
     }
 
     @Override
@@ -100,12 +102,58 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Result<UserDetailVO> getUserDetail(Long userId) {
-        return userInfoService.getUserDetail(userId);
+        String key = CACHE_KEY_PREFIX + userId;
+
+        // 1. 先查缓存
+        String json = redisTemplate.opsForValue().get(key);
+        if (json != null && !json.isBlank()) {
+            try {
+                UserDetailVO cacheVO = JSONUtil.toBean(json, UserDetailVO.class);
+                return Result.success(cacheVO);
+            } catch (Exception e) {
+                // 缓存数据异常，删掉脏缓存，继续查数据库
+                redisTemplate.delete(key);
+            }
+        }
+
+        // 2. 查数据库
+        UserDetailVO detail = userInfoMapper.getUserDetail(userId);
+        if (detail == null) {
+            return Result.error(ResultCode.USER_NOT_EXIST);
+        }
+
+        // 3. 写缓存
+        redisTemplate.opsForValue().set(
+                key,
+                JSONUtil.toJsonStr(detail),
+                10,
+                TimeUnit.MINUTES
+        );
+
+        return Result.success(detail);
     }
 
     @Override
     public Result<String> updateUserInfo(UserInfo userInfo) {
-        return userInfoService.updateUserInfo(userInfo);
+        // 参数校验，userInfo 不能为空，并且 userId 不能为空，后面删除 Redis 缓存时使用
+        if (userInfo == null || userInfo.getUserId() == null) {
+            return Result.error(ResultCode.PARAM_ERROR);
+        }
+
+        // 1. 先操作数据库
+        LambdaQueryWrapper<UserInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(UserInfo::getUserId, userInfo.getUserId());
+        int updateCount = userInfoMapper.update(userInfo, queryWrapper);
+
+        if (updateCount == 0) {
+            return Result.error(ResultCode.USER_NOT_EXIST);
+        }
+
+        // 2. 成功后删除旧缓存（保证一致性）
+        String key = CACHE_KEY_PREFIX + userInfo.getUserId();
+        redisTemplate.delete(key);
+
+        return Result.success("用户信息更新成功");
     }
 
     @Override
