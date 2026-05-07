@@ -17,7 +17,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(authInterceptor)
                 // 拦截所有 /api 下的请求
                 .addPathPatterns("/api/**")
-                // 放行注册和登录接口
-                .excludePathPatterns("/api/users", "/api/users/login");
+                // 放行注册、登录和聊天接口
+                .excludePathPatterns("/api/users", "/api/users/login", "/api/chat/**");
     }
 }
